@@ -5,6 +5,7 @@ import (
 	"cveHunter/logger"
 	"cveHunter/monitor/github"
 	"cveHunter/proxy"
+	"cveHunter/push"
 	"sync"
 	"time"
 )
@@ -13,8 +14,17 @@ func main() {
 	//初始化配置文件
 	config.GetSingleton()
 
-	//使用代理
-	proxy.GetSingleton().Add(github.GetSingleton())
+	//使用代理的模块
+	proxy.GetSingleton().Add(
+		github.GetSingleton(),
+		push.GetDingTalkSingleton(),
+	)
+
+	//设置代理
+	err := proxy.GetSingleton().SetProxy("http://127.0.0.1:8080")
+	if err != nil {
+		logger.Info(err.Error())
+	}
 
 	waitGroup := &sync.WaitGroup{}
 	waitGroup.Add(1)
