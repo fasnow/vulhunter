@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func Run() {
+func RunGithubMonitor() {
 	githubMonitor := github.GetSingleton()
 	_, items, err := githubMonitor.SearchCVEAll()
 	if err != nil {
@@ -65,23 +65,78 @@ func Run() {
 			}
 		}
 	}
+
 	if len(pushCVEList) > 0 {
-		go func() {
-			retry := 5
-			for {
-				if retry <= 0 {
+		if config.GetSingleton().DingTalk.Enable {
+			if config.GetSingleton().DingTalk.WebHookAccessToken == "" || config.GetSingleton().DingTalk.WebHookSecret == "" {
+				logger.Info("didn't configure dingtalk webhook_access_token or webhook_secret, skip push")
+				return
+			}
+			go func() {
+				retry := 5
+				for {
+					if retry <= 0 {
+						break
+					}
+					code, err := push.GetDingTalkSingleton().Push(pushCVEList...)
+					if code < 0 {
+						logger.Info(err.Error())
+						retry--
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					logger.Info("push to dingtalk successfully")
 					break
 				}
-				code, err := push.GetDingTalkSingleton().Push(pushCVEList...)
-				if code < 0 {
-					logger.Info(err.Error())
-					retry--
-					time.Sleep(3 * time.Second)
-					continue
-				}
-				logger.Info("push to dingtalk successfully")
-				break
+			}()
+		}
+
+		if config.GetSingleton().LarkBot.Enable {
+			if config.GetSingleton().LarkBot.WebHookAccessToken == "" || config.GetSingleton().LarkBot.WebHookSecret == "" {
+				logger.Info("didn't configure lark_bot webhook_access_token or webhook_secret, skip push")
+				return
 			}
-		}()
+			go func() {
+				retry := 5
+				for {
+					if retry <= 0 {
+						break
+					}
+					code, err := push.GetLarkSingleton().Push(pushCVEList...)
+					if code < 0 {
+						logger.Info(err.Error())
+						retry--
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					logger.Info("push to lark chat group successfully")
+					break
+				}
+			}()
+		}
+
+		if config.GetSingleton().LarkAssistant.Enable {
+			if config.GetSingleton().LarkAssistant.WebHookAccessToken == "" {
+				logger.Info("didn't configure lark_assistant webhook_access_token, skip push")
+				return
+			}
+			go func() {
+				retry := 5
+				for {
+					if retry <= 0 {
+						break
+					}
+					code, err := push.GetLarkAssistantLarkSingleton().Push(pushCVEList...)
+					if code < 0 {
+						logger.Info(err.Error())
+						retry--
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					logger.Info("push to lark assistant successfully")
+					break
+				}
+			}()
+		}
 	}
 }

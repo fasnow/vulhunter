@@ -1,12 +1,14 @@
 package github
 
 import (
+	"cveHunter/config"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -151,6 +153,8 @@ func (r *Monitor) SearchCVEAll() (int, []Item, error) {
 	}
 	request.Header.Add("Accept", "application/vnd.github+json")
 	request.Header.Add("X-GitHub-Api-Version", "2022-11-28")
+	request.Header.Add("Authorization", config.GetSingleton().Github.GithubToken)
+
 	response, err := r.ProxyClient.Do(request)
 	if err != nil {
 		return -1, nil, err
@@ -185,8 +189,8 @@ func (r *Monitor) SearchCVEAll() (int, []Item, error) {
 		matches := re.FindStringSubmatch(name)
 		if len(matches) > 0 {
 			item.Name = matches[0]
+			item.Description = strings.TrimSpace(item.Description)
 			items = append(items, item)
-
 		}
 	}
 	return 200, items, nil

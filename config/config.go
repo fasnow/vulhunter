@@ -11,27 +11,42 @@ import (
 )
 
 type Config struct {
-	Base     Base
-	Github   Github
-	DingTalk DingTalk
+	Base          Base
+	Github        Github
+	DingTalk      DingTalk
+	LarkAssistant LarkAssistant
+	LarkBot       LarkBot
 }
 
 type Base struct {
-	Proxy       string        `ini:"proxy" comment:"默认为空,支持http和socks,最好不要包含;和#"`
 	EnableProxy bool          `ini:"proxy_enable" comment:"默认:off"`
+	Proxy       string        `ini:"proxy" comment:"默认为空,支持http和socks,最好不要包含;和#"`
 	Timeout     time.Duration `ini:"timeout" comment:"默认:10 * time.Second"`
 	Interval    time.Duration `ini:"interval" comment:"默认:180 * time.Second"`
 }
 
 type Github struct {
-	MaxRecordNumPerAuthor int `ini:"max_record_num_per_author" comment:"对于单条CVE"`
-	MaxAuthorNumPerCve    int `ini:"max_author_num_per_cve" comment:"对于单条CVE"`
+	Enable                bool   `ini:"enable"`
+	GithubToken           string `ini:"github_token" comment:"搜索内容不包含代码: 未认证访问速率最高为10次/min, 认证后最高为30次/min,搜索内容包含代码: 必须认证,访问速率最高为10次/min"`
+	MaxRecordNumPerAuthor int    `ini:"max_record_num_per_author" comment:"对于单条CVE"`
+	MaxAuthorNumPerCve    int    `ini:"max_author_num_per_cve" comment:"对于单条CVE"`
 }
 
 type DingTalk struct {
-	DingTalkWebHookAccessToken string `ini:"dingtalk_webhook_access_token" comment:"钉钉聊机器人webhook的token，注意不是整个链接"`
-	DingTalkWebHookSecret      string `ini:"dingtalk_webhook_secret" comment:"安全设置必须设置为”加签“，生成的sign"`
-	Enable                     bool   `json:"enable"`
+	Enable             bool   `ini:"enable"`
+	WebHookAccessToken string `ini:"webhook_access_token" comment:"钉钉群组机器人webhook的token，注意不是整个链接"`
+	WebHookSecret      string `ini:"webhook_secret" comment:"安全设置必须设置为”加签“，生成的sign"`
+}
+
+type LarkAssistant struct {
+	Enable             bool   `ini:"enable"`
+	WebHookAccessToken string `ini:"webhook_access_token" comment:"飞书机器人助手webhook的token，注意不是整个链接"`
+}
+
+type LarkBot struct {
+	Enable             bool   `ini:"enable"`
+	WebHookAccessToken string `ini:"webhook_access_token" comment:"飞书群组机器人webhook的token，注意不是整个链接"`
+	WebHookSecret      string `ini:"webhook_secret" comment:"安全设置必须设置为”签名校验“，生成的sign"`
 }
 
 var (
@@ -44,12 +59,7 @@ var (
 			Timeout:     10 * time.Second,
 			Interval:    180 * time.Second,
 		},
-		Github: Github{MaxAuthorNumPerCve: 2, MaxRecordNumPerAuthor: 2},
-		DingTalk: DingTalk{
-			DingTalkWebHookAccessToken: "",
-			DingTalkWebHookSecret:      "",
-			Enable:                     false,
-		},
+		Github: Github{MaxAuthorNumPerCve: 2, MaxRecordNumPerAuthor: 2, Enable: true},
 	}
 )
 
@@ -61,6 +71,7 @@ func GetSingleton() *Config {
 }
 
 func init() {
+	ini.PrettyFormat = false
 	options := ini.LoadOptions{
 		SkipUnrecognizableLines:  true, //跳过无法识别的行
 		SpaceBeforeInlineComment: true,

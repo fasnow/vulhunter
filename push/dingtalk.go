@@ -2,9 +2,11 @@ package push
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
 	"cveHunter/config"
 	"cveHunter/db"
-	"cveHunter/utils"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,8 +33,8 @@ func GetDingTalkSingleton() *DingTalk {
 	// 通过 sync.Once 确保仅执行一次实例化操作
 	dingtalkOnce.Do(func() {
 		dingtalkPusher = &DingTalk{
-			webhookToken:  config.GetSingleton().DingTalk.DingTalkWebHookAccessToken,
-			webhookSecret: config.GetSingleton().DingTalk.DingTalkWebHookSecret,
+			webhookToken:  config.GetSingleton().DingTalk.WebHookAccessToken,
+			webhookSecret: config.GetSingleton().DingTalk.WebHookSecret,
 			HttpClient:    &http.Client{},
 		}
 	})
@@ -41,20 +43,26 @@ func GetDingTalkSingleton() *DingTalk {
 
 // Push 小于0表示推送失败
 func (r *DingTalk) Push(cves ...db.GithubCVE) (int, error) {
-	// 获取当前时间戳（毫秒）
+	if r.webhookToken == "" || r.webhookSecret == "" {
+		return -1, fmt.Errorf("no webhook_access_token or webhook_secret")
+	}
+	// 获取当前时间戳（毫秒）,加签
 	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
-
 	stringToSign := fmt.Sprintf("%s\n%s", timestamp, r.webhookSecret)
+	h := hmac.New(sha256.New, []byte(r.webhookSecret))
+	_, _ = io.WriteString(h, stringToSign)
+	sign := base64.StdEncoding.EncodeToString(h.Sum(nil))
+
 	params := url.Values{
 		"access_token": []string{r.webhookToken},
 		"timestamp":    []string{timestamp},
-		"sign":         []string{utils.HmacSHA256(r.webhookSecret, stringToSign)},
+		"sign":         []string{sign},
 	}
 
 	var items []string
 	for _, cve := range cves {
 		items = append(items,
-			fmt.Sprintf("**漏洞编号**:%s  \n**地址**:%s  \n**描述**:  \n  %s  \n", cve.Name, cve.HtmlUrl, cve.Description))
+			fmt.Sprintf("**漏洞编号**:%s  \n**地址**:%s  \n**描述**:  %s  \n", cve.Name, cve.HtmlUrl, cve.Description))
 	}
 
 	t, _ := json.Marshal(map[string]any{
