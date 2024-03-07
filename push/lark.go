@@ -5,14 +5,12 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"cveHunter/config"
-	"cveHunter/db"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -41,7 +39,7 @@ func GetLarkSingleton() *LarkBot {
 }
 
 // Push 小于0表示推送失败
-func (r *LarkBot) Push(cves ...db.GithubCVE) (int, error) {
+func (r *LarkBot) Push(msg string) (int, error) {
 	if r.webhookToken == "" || r.webhookSecret == "" {
 		return -1, fmt.Errorf("no webhook_access_token or webhook_secret")
 	}
@@ -53,11 +51,6 @@ func (r *LarkBot) Push(cves ...db.GithubCVE) (int, error) {
 	_, _ = h.Write([]byte{})
 	sign := base64.StdEncoding.EncodeToString(h.Sum(nil))
 
-	var items []string
-	for _, cve := range cves {
-		items = append(items, fmt.Sprintf("**漏洞编号**:%s  \n**地址**:%s  \n**描述**:%s  \n", cve.Name, cve.HtmlUrl, cve.Description))
-	}
-
 	//https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot#%E6%94%AF%E6%8C%81%E5%8F%91%E9%80%81%E7%9A%84%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B%E8%AF%B4%E6%98%8E
 	//https://open.feishu.cn/document/common-capabilities/message-card/message-cards-content/card-structure/card-content
 	t, _ := json.Marshal(map[string]any{
@@ -68,7 +61,7 @@ func (r *LarkBot) Push(cves ...db.GithubCVE) (int, error) {
 			"elements": []map[string]any{
 				{
 					"tag":     "markdown",
-					"content": strings.Join(items, "---\n"),
+					"content": msg,
 				},
 			},
 		},

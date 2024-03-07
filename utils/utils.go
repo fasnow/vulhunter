@@ -1,11 +1,8 @@
 package utils
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
-	"io"
+	"strings"
 	"time"
 )
 
@@ -14,10 +11,12 @@ func GetTimestamp() string {
 	return fmt.Sprintf("[%s]", time.Now().Format("2006-01-02 15:04"))
 }
 
-func HmacSHA256(secret, message string) string {
-	h := hmac.New(sha256.New, []byte(secret))
-	if _, err := io.WriteString(h, message); err != nil {
-		return ""
+func ListTrimSpace(slice []string) []string {
+	var newSlice = make([]string, 0)
+	for _, s := range slice {
+		if strings.TrimSpace(s) != "" {
+			newSlice = append(newSlice, s)
+		}
 	}
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+	return newSlice
 }

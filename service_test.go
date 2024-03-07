@@ -3,7 +3,7 @@ package main
 import (
 	"cveHunter/config"
 	"cveHunter/logger"
-	"cveHunter/monitor/github"
+	"cveHunter/monitor"
 	"cveHunter/proxy"
 	"cveHunter/push"
 	"fmt"
@@ -35,7 +35,8 @@ func TestRun(t *testing.T) {
 
 	//使用代理的模块
 	proxy.GetSingleton().Add(
-		github.GetSingleton(),
+		monitor.GetGithubSingleton(),
+		monitor.GetAVDMonitorSingleton(),
 		push.GetDingTalkSingleton(),
 		push.GetLarkAssistantLarkSingleton(),
 		push.GetLarkSingleton(),
@@ -48,13 +49,25 @@ func TestRun(t *testing.T) {
 	}
 
 	waitGroup := &sync.WaitGroup{}
-	waitGroup.Add(1)
+
 	logger.Info("service is running...")
+	waitGroup.Add(1)
 	go func() {
 		defer waitGroup.Done()
-		for {
-			if config.GetSingleton().Github.Enable {
+		if config.GetSingleton().Github.Enable {
+			for {
 				RunGithubMonitor()
+				logger.Info("waiting for next loop...")
+				time.Sleep(configSingleton.Base.Interval)
+			}
+		}
+	}()
+	waitGroup.Add(1)
+	go func() {
+		defer waitGroup.Done()
+		if config.GetSingleton().AVD.Enable {
+			for {
+				RunAVDMonitor()
 				logger.Info("waiting for next loop...")
 				time.Sleep(configSingleton.Base.Interval)
 			}

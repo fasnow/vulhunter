@@ -1,6 +1,9 @@
 package db
 
-import "gorm.io/gorm"
+import (
+	"cveHunter/entry"
+	"gorm.io/gorm"
+)
 
 type BaseModel struct {
 	gorm.Model
@@ -13,4 +16,9 @@ type GithubCVE struct {
 	Author      string
 	HtmlUrl     string
 	Description string
+}
+
+type AVD struct {
+	BaseModel
+	entry.AVD
 }

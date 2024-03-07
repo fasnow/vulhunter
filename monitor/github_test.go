@@ -1,4 +1,4 @@
-package github
+package monitor
 
 import (
 	"cveHunter/proxy"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestGithubMonitor_SearchCVEAll(t *testing.T) {
-	monitor := GetSingleton()
+	monitor := GetGithubSingleton()
 	proxy.GetSingleton().Add(monitor)
 	proxy.GetSingleton().SetProxy("http://username:password@127.0.0.1:8001")
 	_, items, err := monitor.SearchCVEAll()

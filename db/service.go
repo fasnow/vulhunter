@@ -1,6 +1,7 @@
 package db
 
 import (
+	"cveHunter/entry"
 	"github.com/yitter/idgenerator-go/idgen"
 	"gorm.io/gorm"
 	"sync"
@@ -51,4 +52,45 @@ func (r *Service) FindAuthorsByCVE(cve string) []string {
 	var authors []string
 	r.db.Model(&GithubCVE{}).Select("DISTINCT author").Where("name = ?", cve).Find(&authors)
 	return authors
+}
+
+type AVDDbService struct {
+	db *gorm.DB
+}
+
+var avdDbService *AVDDbService
+
+func init() {
+	avdDbService = &AVDDbService{
+		db: GetSingleton(),
+	}
+}
+func GetAVDDbServiceSingleton() *AVDDbService {
+	return avdDbService
+}
+
+func (r *AVDDbService) Inset(items ...entry.AVD) error {
+	var avds []AVD
+	for _, item := range items {
+		avds = append(avds, AVD{
+			BaseModel: BaseModel{
+				SID: idgen.NextId(),
+			},
+			AVD: entry.AVD{
+				Number:         item.Number,
+				Name:           item.Name,
+				VulType:        item.VulType,
+				DisclosureDate: item.DisclosureDate,
+				CVE:            item.CVE,
+				POC:            item.POC,
+			},
+		})
+	}
+	return r.db.Create(&avds).Error
+}
+
+func (r *AVDDbService) GetByAVD(id string) AVD {
+	var avd AVD
+	r.db.Where("number = ?", id).Find(&avd)
+	return avd
 }

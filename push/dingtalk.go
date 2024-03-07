@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"cveHunter/config"
-	"cveHunter/db"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -41,11 +39,13 @@ func GetDingTalkSingleton() *DingTalk {
 	return dingtalkPusher
 }
 
+// https://open.dingtalk.com/document/robots/custom-robot-access
 // Push 小于0表示推送失败
-func (r *DingTalk) Push(cves ...db.GithubCVE) (int, error) {
+func (r *DingTalk) Push(title, msg string) (int, error) {
 	if r.webhookToken == "" || r.webhookSecret == "" {
 		return -1, fmt.Errorf("no webhook_access_token or webhook_secret")
 	}
+
 	// 获取当前时间戳（毫秒）,加签
 	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	stringToSign := fmt.Sprintf("%s\n%s", timestamp, r.webhookSecret)
@@ -58,13 +58,6 @@ func (r *DingTalk) Push(cves ...db.GithubCVE) (int, error) {
 		"timestamp":    []string{timestamp},
 		"sign":         []string{sign},
 	}
-
-	var items []string
-	for _, cve := range cves {
-		items = append(items,
-			fmt.Sprintf("**漏洞编号**:%s  \n**地址**:%s  \n**描述**:  %s  \n", cve.Name, cve.HtmlUrl, cve.Description))
-	}
-
 	t, _ := json.Marshal(map[string]any{
 		//消息类型
 		"msgtype": "markdown",
@@ -86,8 +79,8 @@ func (r *DingTalk) Push(cves ...db.GithubCVE) (int, error) {
 
 		//markdown消息
 		"markdown": map[string]any{
-			"text":  strings.Join(items, "  \n------  \n"),
-			"title": "Github漏洞推送",
+			"text":  msg,
+			"title": title,
 		},
 
 		//feedCard消息

@@ -3,12 +3,10 @@ package push
 import (
 	"bytes"
 	"cveHunter/config"
-	"cveHunter/db"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -34,27 +32,19 @@ func GetLarkAssistantLarkSingleton() *LarkAssistant {
 }
 
 // Push 小于0表示推送失败
-func (r *LarkAssistant) Push(cves ...db.GithubCVE) (int, error) {
+func (r *LarkAssistant) Push(title, msg string) (int, error) {
 	if r.webhookToken == "" {
 		return -1, fmt.Errorf("no webhook_access_token")
-	}
-	var items []string
-	for _, cve := range cves {
-		msg := fmt.Sprintf("**漏洞编号**:%s  \n**地址**:%s  \n**描述**:", cve.Name, cve.HtmlUrl)
-		if cve.Description != "" {
-			msg = fmt.Sprintf("%s<font color='grey'>%s</font>", msg, cve.Description)
-		}
-		items = append(items, msg)
 	}
 
 	//https://www.feishu.cn/hc/zh-CN/articles/807992406756-webhook-%E8%A7%A6%E5%8F%91%E5%99%A8
 	//https: //www.feishu.cn/hc/zh-CN/articles/236028437163-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%B6%88%E6%81%AF%E5%86%85%E5%AE%B9%E6%94%AF%E6%8C%81%E7%9A%84%E6%96%87%E6%9C%AC%E6%A0%B7%E5%BC%8F
 	t, _ := json.Marshal(map[string]any{
 		//消息类型
-		"title": "Github漏洞推送",
+		"title": title,
 
 		//markdown消息
-		"content": strings.Join(items, "\n\n"),
+		"content": msg,
 	})
 	request, err := http.NewRequest("POST", "https://www.feishu.cn/flow/api/trigger-webhook/"+r.webhookToken, bytes.NewReader(t))
 	if err != nil {

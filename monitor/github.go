@@ -1,4 +1,4 @@
-package github
+package monitor
 
 import (
 	"cveHunter/config"
@@ -14,25 +14,22 @@ import (
 )
 
 // https://docs.github.com/en/rest/search/search?apiVersion=2022-11-28#search-repositories
-// ?q=tetris+language:assembly&sort=updated
-const searchUrl = "https://api.github.com/search/repositories"
-
-type Monitor struct {
+type GithubSearchMonitor struct {
 	ProxyClient *http.Client
 }
 
 var (
-	instance *Monitor
-	once     sync.Once
+	githubSearchMonitor     *GithubSearchMonitor
+	githubSearchMonitorOnce sync.Once
 )
 
-func GetSingleton() *Monitor {
-	once.Do(func() {
-		instance = &Monitor{
+func GetGithubSingleton() *GithubSearchMonitor {
+	githubSearchMonitorOnce.Do(func() {
+		githubSearchMonitor = &GithubSearchMonitor{
 			ProxyClient: &http.Client{},
 		}
 	})
-	return instance
+	return githubSearchMonitor
 }
 
 type Item struct {
@@ -140,14 +137,14 @@ type Item struct {
 	//} `json:"license"`
 }
 
-func (r *Monitor) SearchCVEAll() (int, []Item, error) {
+func (r *GithubSearchMonitor) SearchCVEAll() (int, []Item, error) {
 	params := url.Values{
 		"q":        []string{"CVE"},
 		"sort":     []string{"updated"},
 		"page":     []string{"1"},
 		"per_page": []string{"100"},
 	}
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", searchUrl, params.Encode()), nil)
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s?%s", "https://api.github.com/search/repositories", params.Encode()), nil)
 	if err != nil {
 		return -1, nil, err
 	}

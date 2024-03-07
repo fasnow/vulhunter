@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Base          Base
 	Github        Github
+	AVD           AVD
 	DingTalk      DingTalk
 	LarkAssistant LarkAssistant
 	LarkBot       LarkBot
@@ -30,6 +31,10 @@ type Github struct {
 	GithubToken           string `ini:"github_token" comment:"搜索内容不包含代码: 未认证访问速率最高为10次/min, 认证后最高为30次/min,搜索内容包含代码: 必须认证,访问速率最高为10次/min"`
 	MaxRecordNumPerAuthor int    `ini:"max_record_num_per_author" comment:"对于单条CVE"`
 	MaxAuthorNumPerCve    int    `ini:"max_author_num_per_cve" comment:"对于单条CVE"`
+}
+
+type AVD struct {
+	Enable bool `ini:"enable" comment:"阿里云漏洞库"`
 }
 
 type DingTalk struct {
@@ -60,6 +65,7 @@ var (
 			Interval:    180 * time.Second,
 		},
 		Github: Github{MaxAuthorNumPerCve: 2, MaxRecordNumPerAuthor: 2, Enable: true},
+		AVD:    AVD{Enable: true},
 	}
 )
 

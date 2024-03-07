@@ -23,7 +23,7 @@ func GetSingleton() *gorm.DB {
 		//if err = instance.AutoMigrate(&BaseModel{}); err != nil {
 		//	panic(err.Error())
 		//}
-		if err = instance.AutoMigrate(&GithubCVE{}); err != nil {
+		if err = instance.AutoMigrate(&GithubCVE{}, &AVD{}); err != nil {
 			panic(err.Error())
 		}
 	})
